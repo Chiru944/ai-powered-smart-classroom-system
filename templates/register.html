@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% if edit_mode %}
+            Update Student
+        {% else %}
+            Register Student
+        {% endif %}
+    </title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 22px;
+            font-family: Arial, sans-serif;
+            background: #101827;
+            color: #f8fafc;
+        }
+
+        .container {
+            width: min(940px, 100%);
+            margin: auto;
+            padding: 24px;
+            border-radius: 16px;
+            background: #1e293b;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #cbd5e1;
+            margin: 0 0 22px;
+            line-height: 1.5;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #64748b;
+            border-radius: 8px;
+            background: #0f172a;
+            color: white;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: 2px solid #38bdf8;
+            border-color: transparent;
+        }
+
+        input:disabled,
+        input[readonly] {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        button,
+        .button-link {
+            border: 0;
+            border-radius: 8px;
+            padding: 13px 18px;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .start {
+            background: #16a34a;
+        }
+
+        .cancel {
+            background: #dc2626;
+        }
+
+        .dashboard {
+            background: #2563eb;
+        }
+
+        .camera-shell {
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #38bdf8;
+            border-radius: 14px;
+            background: black;
+            min-height: 300px;
+        }
+
+        video {
+            display: block;
+            width: 100%;
+            min-height: 300px;
+            max-height: 500px;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 7px 11px;
+            border-radius: 7px;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .instruction,
+        .status {
+            margin-top: 14px;
+            padding: 14px;
+            border-radius: 9px;
+            text-align: center;
+        }
+
+        .instruction {
+            background: #334155;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .status {
+            background: #0f172a;
+            min-height: 52px;
+            line-height: 1.45;
+        }
+
+        .status.success {
+            border: 1px solid #22c55e;
+            color: #86efac;
+        }
+
+        .status.warning {
+            border: 1px solid #f59e0b;
+            color: #fde68a;
+        }
+
+        .status.error {
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+
+        .progress-track {
+            height: 28px;
+            margin-top: 14px;
+            overflow: hidden;
+            border-radius: 20px;
+            background: #475569;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background: #22c55e;
+            transition: width 0.25s;
+        }
+
+        .count {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 7px;
+            margin-top: 14px;
+        }
+
+        .step {
+            padding: 9px 4px;
+            border-radius: 7px;
+            text-align: center;
+            background: #475569;
+        }
+
+        .step.active {
+            background: #0369a1;
+            outline: 2px solid #38bdf8;
+        }
+
+        .step.done {
+            background: #15803d;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 760px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .steps {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+<div class="container">
+
+    <h1>
+        {% if edit_mode %}
+            Update Student Face Registration
+        {% else %}
+            Automatic Student Face Registration
+        {% endif %}
+    </h1>
+
+    <p class="subtitle">
+        {% if edit_mode %}
+            Update the student name and automatically capture 10 new face images.
+            The previous face images will be replaced only after successful capture.
+        {% else %}
+            Enter the student's details and click Start Registration.
+            The page will automatically capture 10 accepted face images,
+            store them in SQLite, save the dataset and rebuild the LBPH model.
+        {% endif %}
+    </p>
+
+    <div class="form-row">
+        <input
+            id="usn"
+            type="text"
+            placeholder="Enter USN"
+            autocomplete="off"
+            value="{{ student['usn'] if edit_mode and student else '' }}"
+            {% if edit_mode %}readonly{% endif %}
+        >
+
+        <input
+            id="name"
+            type="text"
+            placeholder="Enter student name"
+            autocomplete="off"
+            value="{{ student['name'] if edit_mode and student else '' }}"
+        >
+
+        <button
+            id="startButton"
+            class="start"
+            type="button"
+        >
+            {% if edit_mode %}
+                Update and Recapture
+            {% else %}
+                Start Registration
+            {% endif %}
+        </button>
+    </div>
+
+    <div class="camera-shell">
+        <video id="video" autoplay playsinline muted></video>
+        <div id="cameraBadge" class="badge">Camera inactive</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="instruction" class="instruction">
+        {% if edit_mode %}
+            Check the details, then click Update and Recapture.
+        {% else %}
+            Enter USN and name, then click Start Registration.
+        {% endif %}
+    </div>
+
+    <div id="status" class="status">
+        The camera will open after registration starts.
+    </div>
+
+    <div class="progress-track">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
+
+    <div id="count" class="count">0 / 10 images captured</div>
+    <div id="steps" class="steps"></div>
+
+    <div class="actions">
+        <button
+            id="cancelButton"
+            class="cancel"
+            type="button"
+            disabled
+        >
+            Cancel Registration
+        </button>
+
+        <a
+            id="dashboardButton"
+            class="button-link dashboard"
+            href="/home"
+            target="_top"
+        >
+            Return to Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+    const EDIT_MODE = {{ 'true' if edit_mode else 'false' }};
+    let requiredImages = Number({{ required_images|default(10)|int }}) || 10;
+
+    const CAPTURE_INTERVAL_MS = 1600;
+
+    const poses = [
+        "Look straight at the camera",
+        "Keep your face straight and steady",
+        "Turn slightly to your left",
+        "Turn a little more to your left",
+        "Turn slightly to your right",
+        "Turn a little more to your right",
+        "Look slightly upward",
+        "Look slightly downward",
+        "Look straight with a slight smile",
+        "Look straight and remain steady"
+    ];
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const usnInput = document.getElementById("usn");
+    const nameInput = document.getElementById("name");
+    const startButton = document.getElementById("startButton");
+    const cancelButton = document.getElementById("cancelButton");
+    const dashboardButton = document.getElementById("dashboardButton");
+    const statusBox = document.getElementById("status");
+    const instructionBox = document.getElementById("instruction");
+    const progressBar = document.getElementById("progressBar");
+    const countBox = document.getElementById("count");
+    const stepsBox = document.getElementById("steps");
+    const cameraBadge = document.getElementById("cameraBadge");
+
+    let stream = null;
+    let timer = null;
+    let active = false;
+    let sending = false;
+    let finishing = false;
+    let captured = 0;
+
+    function createSteps() {
+        stepsBox.innerHTML = "";
+
+        for (let i = 0; i < requiredImages; i++) {
+            const item = document.createElement("div");
+            item.id = `step-${i}`;
+            item.className = "step";
+            item.textContent = i + 1;
+            item.title = poses[i] || "Face image";
+            stepsBox.appendChild(item);
+        }
+
+        updateDisplay();
+    }
+
+    function setStatus(message, type = "") {
+        statusBox.textContent = message;
+        statusBox.className = "status" + (type ? ` ${type}` : "");
+    }
+
+    function updateDisplay() {
+        const percentage =
+            requiredImages > 0
+                ? Math.min(100, (captured / requiredImages) * 100)
+                : 0;
+
+        progressBar.style.width = `${percentage}%`;
+        countBox.textContent =
+            `${captured} / ${requiredImages} images captured`;
+
+        for (let i = 0; i < requiredImages; i++) {
+            const step = document.getElementById(`step-${i}`);
+
+            if (!step) {
+                continue;
+            }
+
+            step.className = "step";
+
+            if (i < captured) {
+                step.classList.add("done");
+            } else if (active && i === captured) {
+                step.classList.add("active");
+            }
+        }
+
+        if (active && captured < requiredImages) {
+            instructionBox.textContent =
+                poses[captured] || "Keep looking at the camera";
+        }
+    }
+
+    function lockInputs(locked) {
+        if (!EDIT_MODE) {
+            usnInput.disabled = locked;
+        }
+
+        nameInput.disabled = locked;
+        startButton.disabled = locked;
+
+        dashboardButton.style.pointerEvents =
+            locked ? "none" : "auto";
+
+        dashboardButton.style.opacity =
+            locked ? "0.5" : "1";
+    }
+
+    async function startCamera() {
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+            setStatus(
+                "This browser does not support webcam access.",
+                "error"
+            );
+
+            return false;
+        }
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: "user"
+                },
+                audio: false
+            });
+
+            video.srcObject = stream;
+            await video.play();
+
+            cameraBadge.textContent = "Camera active";
+
+            return true;
+
+        } catch (error) {
+            console.error("Camera error:", error);
+
+            cameraBadge.textContent = "Camera unavailable";
+
+            setStatus(
+                "Camera could not be opened. Allow browser camera permission " +
+                "and close other applications using the webcam.",
+                "error"
+            );
+
+            return false;
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+
+        stream = null;
+        video.srcObject = null;
+        cameraBadge.textContent = "Camera inactive";
+    }
+
+    function stopTimer() {
+        if (timer) {
+            clearInterval(timer);
+        }
+
+        timer = null;
+    }
+
+    async function readJson(response) {
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+            data = responseText
+                ? JSON.parse(responseText)
+                : {};
+        } catch (error) {
+            console.error(
+                "The server returned non-JSON content:",
+                responseText
+            );
+
+            throw new Error(
+                "The Flask server returned an invalid response. " +
+                "Check the PowerShell terminal for the actual Python error."
+            );
+        }
+
+        if (!response.ok || data.success === false) {
+            throw new Error(
+                data.message ||
+                `Request failed with status ${response.status}`
+            );
+        }
+
+        return data;
+    }
+
+    async function cancelOnServer() {
+        try {
+            await fetch("/registration/cancel", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+        } catch (error) {
+            console.error("Cancel request failed:", error);
+        }
+    }
+
+    async function startRegistration() {
+        if (active || finishing) {
+            return;
+        }
+
+        const usn = usnInput.value.trim().toUpperCase();
+        const name = nameInput.value.trim();
+
+        usnInput.value = usn;
+
+        if (!usn || !name) {
+            setStatus(
+                "Enter both USN and student name.",
+                "warning"
+            );
+
+            return;
+        }
+
+        lockInputs(true);
+        setStatus("Starting registration...", "warning");
+
+        try {
+            const response = await fetch("/registration/start", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    usn: usn,
+                    name: name,
+                    edit_mode: EDIT_MODE
+                })
+            });
+
+            const result = await readJson(response);
+
+            requiredImages =
+                Number(result.required_images || 10);
+
+            captured = 0;
+            createSteps();
+
+            const cameraStarted = await startCamera();
+
+            if (!cameraStarted) {
+                await cancelOnServer();
+                lockInputs(false);
+                return;
+            }
+
+            active = true;
+            finishing = false;
+            cancelButton.disabled = false;
+
+            updateDisplay();
+
+            setStatus(
+                EDIT_MODE
+                    ? "Automatic recapture started. Keep only one face visible."
+                    : "Automatic capture started. Keep only one face visible.",
+                "success"
+            );
+
+            setTimeout(() => {
+                if (!active) {
+                    return;
+                }
+
+                captureFrame();
+
+                timer = setInterval(
+                    captureFrame,
+                    CAPTURE_INTERVAL_MS
+                );
+            }, 1800);
+
+        } catch (error) {
+            console.error("Registration start error:", error);
+
+            setStatus(error.message, "error");
+            lockInputs(false);
+        }
+    }
+
+    async function captureFrame() {
+        if (
+            !active ||
+            sending ||
+            finishing ||
+            captured >= requiredImages
+        ) {
+            return;
+        }
+
+        if (
+            video.readyState < 2 ||
+            video.videoWidth === 0 ||
+            video.videoHeight === 0
+        ) {
+            setStatus(
+                "Waiting for the camera to become ready...",
+                "warning"
+            );
+
+            return;
+        }
+
+        sending = true;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const context = canvas.getContext("2d");
+
+        /*
+        The preview is mirrored using CSS, but the image sent to
+        Flask is kept in normal orientation.
+        */
+        context.drawImage(
+            video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const image = canvas.toDataURL(
+            "image/jpeg",
+            0.92
+        );
+
+        try {
+            const response = await fetch("/registration/capture", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    image: image
+                })
+            });
+
+            const result = await readJson(response);
+
+            if (result.accepted) {
+                captured = Number(
+                    result.count || captured + 1
+                );
+
+                setStatus(
+                    result.message ||
+                    `Image ${captured} accepted.`,
+                    "success"
+                );
+
+                updateDisplay();
+            } else {
+                setStatus(
+                    result.message ||
+                    "Image rejected. Adjust your face position.",
+                    "warning"
+                );
+            }
+
+            if (
+                result.completed ||
+                captured >= requiredImages
+            ) {
+                await finishRegistration();
+            }
+
+        } catch (error) {
+            console.error("Capture error:", error);
+
+            setStatus(
+                `Capture error: ${error.message}`,
+                "error"
+            );
+
+        } finally {
+            sending = false;
+        }
+    }
+
+    async function finishRegistration() {
+        if (finishing) {
+            return;
+        }
+
+        finishing = true;
+        active = false;
+
+        stopTimer();
+
+        cancelButton.disabled = true;
+
+        instructionBox.textContent =
+            EDIT_MODE
+                ? "Saving the new images and retraining the attendance model..."
+                : "Saving 10 images and training the attendance model...";
+
+        setStatus(
+            "Please wait. Do not close this page.",
+            "warning"
+        );
+
+        try {
+            const response = await fetch("/registration/finish", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            const result = await readJson(response);
+
+            captured = requiredImages;
+            updateDisplay();
+            stopCamera();
+
+            instructionBox.textContent =
+                EDIT_MODE
+                    ? "Student details and face images updated successfully."
+                    : "Student registration completed successfully.";
+
+            setStatus(
+                result.message ||
+                (
+                    EDIT_MODE
+                        ? "Student updated successfully."
+                        : "Student registered successfully."
+                ),
+                result.model_loaded === false
+                    ? "warning"
+                    : "success"
+            );
+
+            lockInputs(false);
+
+        } catch (error) {
+            console.error("Finish error:", error);
+
+            setStatus(
+                `Registration failed: ${error.message}`,
+                "error"
+            );
+
+            instructionBox.textContent =
+                "Registration did not complete.";
+
+            lockInputs(false);
+
+        } finally {
+            finishing = false;
+        }
+    }
+
+    async function cancelRegistration() {
+        if (!active || finishing) {
+            return;
+        }
+
+        const confirmed = confirm(
+            "Cancel registration and discard all captured images?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        active = false;
+
+        stopTimer();
+        stopCamera();
+
+        await cancelOnServer();
+
+        captured = 0;
+        cancelButton.disabled = true;
+
+        lockInputs(false);
+        updateDisplay();
+
+        instructionBox.textContent =
+            EDIT_MODE
+                ? "Check the details, then click Update and Recapture."
+                : "Enter USN and name, then click Start Registration.";
+
+        setStatus(
+            "Registration cancelled. No new data was stored.",
+            "success"
+        );
+    }
+
+    startButton.addEventListener(
+        "click",
+        startRegistration
+    );
+
+    cancelButton.addEventListener(
+        "click",
+        cancelRegistration
+    );
+
+    window.addEventListener("beforeunload", event => {
+        if (active || finishing) {
+            event.preventDefault();
+            event.returnValue = "";
+        }
+
+        stopCamera();
+    });
+
+    createSteps();
+</script>
+</body>
+</html>

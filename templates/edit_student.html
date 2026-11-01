@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Edit Student</title>
+
+<style>
+
+body{
+    background:#121212;
+    color:white;
+    font-family:Arial;
+    margin:0;
+    padding:0;
+}
+
+.container{
+    width:600px;
+    margin:auto;
+    margin-top:20px;
+    background:#1e1e1e;
+    padding:20px;
+    border-radius:10px;
+}
+
+h2{
+    text-align:center;
+}
+
+label{
+    display:block;
+    margin-top:10px;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    border:none;
+    border-radius:5px;
+}
+
+video{
+    width:100%;
+    margin-top:15px;
+    border-radius:10px;
+    border:2px solid cyan;
+}
+
+.preview{
+    text-align:center;
+    margin-top:20px;
+}
+
+.preview img{
+    width:200px;
+    height:200px;
+    border-radius:10px;
+    object-fit:cover;
+    border:2px solid cyan;
+}
+
+.btn{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:5px;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.capture{
+    background:#007bff;
+}
+
+.retake{
+    background:#ff9800;
+}
+
+.save{
+    background:#28a745;
+}
+
+.back{
+    background:#6c757d;
+}
+
+</style>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Edit Student</h2>
+
+<label>USN</label>
+
+<input
+type="text"
+id="usn"
+value="{{ student['usn'] }}"
+readonly>
+
+<label>Student Name</label>
+
+<input
+type="text"
+id="name"
+value="{{ student['name'] }}"
+required>
+
+<div class="preview">
+
+<h3>Current Photo</h3>
+
+<img
+src="/student_photo/{{ student['usn'] }}"
+id="currentPhoto">
+
+</div>
+
+<video
+id="video"
+autoplay>
+</video>
+
+<button
+class="btn capture"
+type="button"
+onclick="capturePhoto()">
+
+Capture New Photo
+
+</button>
+
+<button
+class="btn retake"
+type="button"
+onclick="startCamera()">
+
+Recapture Photo
+
+</button>
+
+<div class="preview">
+
+<h3>Captured Photo</h3>
+
+<img
+id="capturedImage"
+style="display:none;">
+
+</div>
+
+<button
+class="btn save"
+type="button"
+onclick="saveStudent()">
+
+Save Changes
+
+</button>
+
+<button
+class="btn back"
+type="button"
+onclick="window.location.href='/view_students'">
+
+Back
+
+</button>
+
+</div>
+
+<canvas
+id="canvas"
+style="display:none;">
+</canvas>
+
+<script>
+
+let imageData = "";
+
+const video =
+document.getElementById("video");
+
+function startCamera(){
+
+navigator.mediaDevices
+.getUserMedia({
+    video:true
+})
+
+.then(function(stream){
+
+    video.srcObject = stream;
+
+})
+
+.catch(function(error){
+
+    alert(
+    "Unable to access camera"
+    );
+
+});
+
+}
+
+startCamera();
+
+function capturePhoto(){
+
+const canvas =
+document.getElementById(
+"canvas"
+);
+
+canvas.width =
+video.videoWidth;
+
+canvas.height =
+video.videoHeight;
+
+const ctx =
+canvas.getContext("2d");
+
+ctx.drawImage(
+video,
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+imageData =
+canvas.toDataURL(
+"image/jpeg"
+);
+
+const preview =
+document.getElementById(
+"capturedImage"
+);
+
+preview.src =
+imageData;
+
+preview.style.display =
+"block";
+
+}
+
+function saveStudent(){
+
+const usn =
+document.getElementById(
+"usn"
+).value;
+
+const name =
+document.getElementById(
+"name"
+).value;
+
+fetch(
+"/update_student",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+usn:usn,
+name:name,
+image:imageData
+
+})
+
+}
+)
+
+.then(
+response =>
+response.json()
+)
+
+.then(data => {
+
+alert(
+data.message
+);
+
+window.location.href =
+"/view_students";
+
+})
+
+.catch(error => {
+
+console.log(error);
+
+alert(
+"Update Failed"
+);
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>

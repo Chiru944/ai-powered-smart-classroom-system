@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Classroom Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark">AI</div>
+    <div>
+      <div class="brand-title">AI-Powered Smart Classroom</div>
+      <div class="brand-subtitle">Monitoring and Intelligent Attendance System</div>
+    </div>
+  </div>
+  <div class="live-chip"><span class="live-dot"></span> SYSTEM LIVE</div>
+</header>
+
+<main class="dashboard-shell">
+  <section class="monitor-panel">
+    <div class="panel-heading">
+      <h2>Live Classroom Monitoring</h2>
+      <span class="live-chip"><span class="live-dot"></span> LIVE</span>
+    </div>
+    <div class="camera-frame">
+      <img src="/video" alt="Live classroom camera stream">
+      <div class="camera-overlay">Real-time face and engagement analysis</div>
+    </div>
+    <div class="stats-grid">
+      <article class="metric-card"><div class="metric-label">Students</div><div class="metric-value" id="students">0</div></article>
+      <article class="metric-card"><div class="metric-label">Attentive</div><div class="metric-value" id="attentive">0</div></article>
+      <article class="metric-card"><div class="metric-label">Distracted</div><div class="metric-value" id="distracted">0</div></article>
+      <article class="metric-card"><div class="metric-label">Engagement</div><div class="metric-value" id="engagement">0%</div></article>
+    </div>
+  </section>
+
+  <section class="content-panel">
+    <nav class="navbar" aria-label="Dashboard navigation">
+      <a href="{{ url_for('register_student') }}" target="_blank" rel="noopener noreferrer">Register Student</a>
+      <a href="/view_students" target="content">View Students</a>
+      <a href="/add_timetable" target="content">Add Timetable</a>
+      <a href="/view_timetable" target="content">View Timetable</a>
+      <a href="/graph" target="content">Graph Analysis</a>
+      <a href="/attendance/1BMATCS201" target="content">Attendance</a>
+      <a href="/attendance_records" target="content">Attendance Records</a>
+      <a href="/report" target="content">Report</a>
+      <a href="/logout" class="logout-link">Logout</a>
+    </nav>
+    <iframe class="content-frame" name="content" src="/attendance/1BMATCS201" title="Dashboard content"></iframe>
+  </section>
+</main>
+
+<script>
+async function updateStats(){
+  try{
+    const response = await fetch('/stats');
+    if(!response.ok) return;
+    const data = await response.json();
+    document.getElementById('students').textContent = data.students ?? 0;
+    document.getElementById('attentive').textContent = data.attentive ?? 0;
+    document.getElementById('distracted').textContent = data.distracted ?? 0;
+    document.getElementById('engagement').textContent = `${data.engagement ?? 0}%`;
+  }catch(error){ console.debug('Stats update unavailable:', error); }
+}
+setInterval(updateStats,1000);
+updateStats();
+</script>
+</body>
+</html>

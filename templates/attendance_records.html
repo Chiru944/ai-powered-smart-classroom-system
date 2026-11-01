@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Attendance Records</title>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+:root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --success: #22c55e;
+    --danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a, #111827);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    padding: 24px;
+}
+
+.page-container {
+    max-width: 1500px;
+    margin: auto;
+}
+
+.page-header {
+    margin-bottom: 22px;
+}
+
+.page-header h2 {
+    margin: 0 0 8px;
+    font-size: 30px;
+}
+
+.page-header p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.filter-card,
+.table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.filter-card {
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.search-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.field label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+
+.field input,
+.field select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #475569;
+    border-radius: 9px;
+    background: #0f172a;
+    color: var(--text);
+    outline: none;
+    transition: 0.2s;
+}
+
+.field input:focus,
+.field select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.full-search {
+    grid-column: 1 / -1;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.btn {
+    border: none;
+    border-radius: 9px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #475569;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #64748b;
+}
+
+.result-count {
+    margin-left: auto;
+    color: #cbd5e1;
+    font-weight: 700;
+}
+
+.table-card {
+    overflow: hidden;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1050px;
+}
+
+thead {
+    background: var(--primary);
+}
+
+th {
+    padding: 14px 12px;
+    text-align: center;
+    color: white;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+th:hover {
+    background: var(--primary-hover);
+}
+
+td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    color: #e2e8f0;
+}
+
+tbody tr {
+    transition: 0.18s;
+}
+
+tbody tr:hover {
+    background: #273449;
+}
+
+tbody tr.date-highlight {
+    background: rgba(37, 99, 235, 0.22);
+    box-shadow: inset 4px 0 0 #38bdf8;
+}
+
+.status-badge {
+    display: inline-block;
+    min-width: 78px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.status-present {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.status-absent {
+    background: rgba(239, 68, 68, 0.16);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.no-records {
+    display: none;
+    text-align: center;
+    padding: 28px;
+    color: var(--muted);
+}
+
+@media (max-width: 1000px) {
+    .search-grid {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 14px;
+    }
+
+    .search-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full-search {
+        grid-column: auto;
+    }
+
+    .result-count {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <div class="page-header">
+        <h2>Attendance Records</h2>
+
+        <p>
+            Search by student, subject, date, period,
+            status or entry time.
+        </p>
+    </div>
+
+    <div class="filter-card">
+
+        <div class="search-grid">
+
+            <div class="field full-search">
+                <label for="globalSearch">
+                    Search All Columns
+                </label>
+
+                <input
+                    type="text"
+                    id="globalSearch"
+                    placeholder="Search name, USN, subject code, date, period, status or entry time">
+            </div>
+
+            <div class="field">
+                <label for="nameSearch">
+                    Student Name
+                </label>
+
+                <input
+                    type="text"
+                    id="nameSearch"
+                    placeholder="Enter student name">
+            </div>
+
+            <div class="field">
+                <label for="usnSearch">
+                    USN
+                </label>
+
+                <input
+                    type="text"
+                    id="usnSearch"
+                    placeholder="Enter USN">
+            </div>
+
+            <div class="field">
+                <label for="subjectSearch">
+                    Subject Code
+                </label>
+
+                <input
+                    type="text"
+                    id="subjectSearch"
+                    placeholder="Example: 1BPIC205">
+            </div>
+
+            <div class="field">
+                <label for="dateSearch">
+                    Date
+                </label>
+
+                <input
+                    type="date"
+                    id="dateSearch">
+            </div>
+
+            <div class="field">
+                <label for="periodSearch">
+                    Period
+                </label>
+
+                <input
+                    type="text"
+                    id="periodSearch"
+                    placeholder="Enter period">
+            </div>
+
+            <div class="field">
+                <label for="statusSearch">
+                    Status
+                </label>
+
+                <select id="statusSearch">
+                    <option value="">
+                        All Statuses
+                    </option>
+
+                    <option value="present">
+                        Present
+                    </option>
+
+                    <option value="absent">
+                        Absent
+                    </option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="entryTimeSearch">
+                    Entry Time
+                </label>
+
+                <input
+                    type="text"
+                    id="entryTimeSearch"
+                    placeholder="Example: 10:45">
+            </div>
+
+            <div class="field">
+                <label for="dateSort">
+                    Sort by Date
+                </label>
+
+                <select id="dateSort">
+                    <option value="newest">
+                        Newest First
+                    </option>
+
+                    <option value="oldest">
+                        Oldest First
+                    </option>
+
+                    <option value="original">
+                        Original Order
+                    </option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="filter-actions">
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                id="applyFilters">
+                Apply Filters
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-secondary"
+                id="clearFilters">
+                Clear Filters
+            </button>
+
+            <div class="result-count">
+                Showing
+                <span id="visibleCount">0</span>
+                record(s)
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="table-card">
+
+        <div class="table-wrapper">
+
+            <table id="attendanceTable">
+
+                <thead>
+                    <tr>
+                        <th data-column="0">ID</th>
+                        <th data-column="1">USN</th>
+                        <th data-column="2">Name</th>
+                        <th data-column="3">Subject Code</th>
+                        <th data-column="4">Date</th>
+                        <th data-column="5">Period</th>
+                        <th data-column="6">Status</th>
+                        <th data-column="7">Entry Time</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceBody">
+
+                    {% for row in records %}
+
+                    <tr data-original-index="{{ loop.index0 }}">
+
+                        <td>
+                            {{ row['id'] }}
+                        </td>
+
+                        <td>
+                            {{ row['usn'] }}
+                        </td>
+
+                        <td>
+                            {{ row['name'] }}
+                        </td>
+
+                        <td>
+                            {{ row['subject_code'] }}
+                        </td>
+
+                        <td>
+                            {{ row['date'] }}
+                        </td>
+
+                        <td>
+                            {{ row['period'] }}
+                        </td>
+
+                        <td>
+
+                            {% if row['status']|lower == 'present' %}
+
+                            <span class="status-badge status-present">
+                                {{ row['status'] }}
+                            </span>
+
+                            {% else %}
+
+                            <span class="status-badge status-absent">
+                                {{ row['status'] }}
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ row['entry_time'] }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            <div class="no-records" id="noRecords">
+                No attendance records match the selected filters.
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const attendanceBody =
+        document.getElementById("attendanceBody");
+
+    const rows =
+        Array.from(attendanceBody.querySelectorAll("tr"));
+
+    const globalSearch =
+        document.getElementById("globalSearch");
+
+    const nameSearch =
+        document.getElementById("nameSearch");
+
+    const usnSearch =
+        document.getElementById("usnSearch");
+
+    const subjectSearch =
+        document.getElementById("subjectSearch");
+
+    const dateSearch =
+        document.getElementById("dateSearch");
+
+    const periodSearch =
+        document.getElementById("periodSearch");
+
+    const statusSearch =
+        document.getElementById("statusSearch");
+
+    const entryTimeSearch =
+        document.getElementById("entryTimeSearch");
+
+    const dateSort =
+        document.getElementById("dateSort");
+
+    const visibleCount =
+        document.getElementById("visibleCount");
+
+    const noRecords =
+        document.getElementById("noRecords");
+
+    function normalize(value) {
+        return value.trim().toLowerCase();
+    }
+
+    function getCellText(row, index) {
+        return normalize(row.cells[index].innerText);
+    }
+
+    function parseDate(value) {
+
+        const timestamp = Date.parse(value);
+
+        if (Number.isNaN(timestamp)) {
+            return 0;
+        }
+
+        return timestamp;
+    }
+
+    function applyFilters() {
+
+        const filters = {
+            global: normalize(globalSearch.value),
+            name: normalize(nameSearch.value),
+            usn: normalize(usnSearch.value),
+            subject: normalize(subjectSearch.value),
+            date: dateSearch.value,
+            period: normalize(periodSearch.value),
+            status: normalize(statusSearch.value),
+            entryTime: normalize(entryTimeSearch.value)
+        };
+
+        let matchingRows = rows.filter(function (row) {
+
+            const completeRowText =
+                Array.from(row.cells)
+                    .map(function (cell) {
+                        return normalize(cell.innerText);
+                    })
+                    .join(" ");
+
+            const matchesGlobal =
+                !filters.global ||
+                completeRowText.includes(filters.global);
+
+            const matchesName =
+                !filters.name ||
+                getCellText(row, 2).includes(filters.name);
+
+            const matchesUsn =
+                !filters.usn ||
+                getCellText(row, 1).includes(filters.usn);
+
+            const matchesSubject =
+                !filters.subject ||
+                getCellText(row, 3).includes(filters.subject);
+
+            const matchesDate =
+                !filters.date ||
+                getCellText(row, 4) === normalize(filters.date);
+
+            const matchesPeriod =
+                !filters.period ||
+                getCellText(row, 5).includes(filters.period);
+
+            const matchesStatus =
+                !filters.status ||
+                getCellText(row, 6).includes(filters.status);
+
+            const matchesEntryTime =
+                !filters.entryTime ||
+                getCellText(row, 7).includes(filters.entryTime);
+
+            return (
+                matchesGlobal &&
+                matchesName &&
+                matchesUsn &&
+                matchesSubject &&
+                matchesDate &&
+                matchesPeriod &&
+                matchesStatus &&
+                matchesEntryTime
+            );
+        });
+
+        rows.forEach(function (row) {
+            row.style.display = "none";
+            row.classList.remove("date-highlight");
+        });
+
+        matchingRows.sort(function (firstRow, secondRow) {
+
+            if (filters.date) {
+
+                const firstDateMatches =
+                    getCellText(firstRow, 4) ===
+                    normalize(filters.date);
+
+                const secondDateMatches =
+                    getCellText(secondRow, 4) ===
+                    normalize(filters.date);
+
+                if (firstDateMatches !== secondDateMatches) {
+                    return firstDateMatches ? -1 : 1;
+                }
+            }
+
+            if (dateSort.value === "newest") {
+
+                return (
+                    parseDate(getCellText(secondRow, 4)) -
+                    parseDate(getCellText(firstRow, 4))
+                );
+            }
+
+            if (dateSort.value === "oldest") {
+
+                return (
+                    parseDate(getCellText(firstRow, 4)) -
+                    parseDate(getCellText(secondRow, 4))
+                );
+            }
+
+            return (
+                Number(firstRow.dataset.originalIndex) -
+                Number(secondRow.dataset.originalIndex)
+            );
+        });
+
+        matchingRows.forEach(function (row) {
+
+            if (
+                filters.date &&
+                getCellText(row, 4) === normalize(filters.date)
+            ) {
+                row.classList.add("date-highlight");
+            }
+
+            row.style.display = "";
+
+            attendanceBody.appendChild(row);
+        });
+
+        visibleCount.textContent =
+            matchingRows.length;
+
+        noRecords.style.display =
+            matchingRows.length === 0
+                ? "block"
+                : "none";
+    }
+
+    function clearFilters() {
+
+        globalSearch.value = "";
+        nameSearch.value = "";
+        usnSearch.value = "";
+        subjectSearch.value = "";
+        dateSearch.value = "";
+        periodSearch.value = "";
+        statusSearch.value = "";
+        entryTimeSearch.value = "";
+
+        dateSort.value = "newest";
+
+        applyFilters();
+    }
+
+    document
+        .getElementById("applyFilters")
+        .addEventListener("click", applyFilters);
+
+    document
+        .getElementById("clearFilters")
+        .addEventListener("click", clearFilters);
+
+    [
+        globalSearch,
+        nameSearch,
+        usnSearch,
+        subjectSearch,
+        dateSearch,
+        periodSearch,
+        statusSearch,
+        entryTimeSearch,
+        dateSort
+    ].forEach(function (element) {
+
+        element.addEventListener(
+            "input",
+            applyFilters
+        );
+
+        element.addEventListener(
+            "change",
+            applyFilters
+        );
+    });
+
+    document
+        .querySelectorAll(
+            "#attendanceTable th[data-column]"
+        )
+        .forEach(function (header) {
+
+            let ascending = true;
+
+            header.addEventListener(
+                "click",
+                function () {
+
+                    const columnIndex =
+                        Number(header.dataset.column);
+
+                    const visibleRows =
+                        rows.filter(function (row) {
+                            return row.style.display !== "none";
+                        });
+
+                    visibleRows.sort(
+                        function (firstRow, secondRow) {
+
+                            let firstValue =
+                                getCellText(
+                                    firstRow,
+                                    columnIndex
+                                );
+
+                            let secondValue =
+                                getCellText(
+                                    secondRow,
+                                    columnIndex
+                                );
+
+                            if (
+                                columnIndex === 0 ||
+                                columnIndex === 5
+                            ) {
+                                firstValue =
+                                    Number(firstValue) || 0;
+
+                                secondValue =
+                                    Number(secondValue) || 0;
+                            }
+
+                            else if (columnIndex === 4) {
+
+                                firstValue =
+                                    parseDate(firstValue);
+
+                                secondValue =
+                                    parseDate(secondValue);
+                            }
+
+                            if (firstValue < secondValue) {
+                                return ascending ? -1 : 1;
+                            }
+
+                            if (firstValue > secondValue) {
+                                return ascending ? 1 : -1;
+                            }
+
+                            return 0;
+                        }
+                    );
+
+                    visibleRows.forEach(function (row) {
+                        attendanceBody.appendChild(row);
+                    });
+
+                    ascending = !ascending;
+                }
+            );
+        });
+
+    applyFilters();
+});
+</script>
+
+</body>
+</html>

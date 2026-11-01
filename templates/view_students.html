@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>View Students</title>
+
+<style>
+
+body{
+    background:#121212;
+    color:white;
+    font-family:Arial;
+    margin:0;
+    padding:20px;
+}
+
+h2{
+    text-align:center;
+}
+
+table{
+    width:95%;
+    margin:auto;
+    border-collapse:collapse;
+    background:#1e1e1e;
+}
+
+th{
+    background:#007bff;
+    color:white;
+    padding:12px;
+}
+
+td{
+    padding:12px;
+    text-align:center;
+    border-bottom:1px solid #333;
+}
+
+img{
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #00d4ff;
+}
+
+.edit-btn{
+
+    background:green;
+    color:white;
+    padding:8px 15px;
+    text-decoration:none;
+    border-radius:5px;
+}
+
+.delete-btn{
+
+    background:red;
+    color:white;
+    padding:8px 15px;
+    text-decoration:none;
+    border-radius:5px;
+}
+
+.edit-btn:hover{
+    background:#0f8a0f;
+}
+
+.delete-btn:hover{
+    background:#cc0000;
+}
+
+.top-bar{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.add-btn{
+
+    background:#007bff;
+    color:white;
+    padding:10px 20px;
+    text-decoration:none;
+    border-radius:5px;
+}
+
+</style>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h2>Student Records</h2>
+
+<div class="top-bar">
+
+<a href="/register_student"
+   class="add-btn"
+   target="_blank"
+   rel="noopener noreferrer">
+    Register New Student
+</a>
+
+</div>
+
+<table>
+
+<tr>
+
+<th>Photo</th>
+<th>USN</th>
+<th>Name</th>
+<th>Edit</th>
+<th>Delete</th>
+
+</tr>
+
+{% for student in students %}
+
+<tr>
+
+<td>
+
+<img src="/student_photo/{{ student['usn'] }}">
+
+</td>
+
+<td>
+
+{{ student['usn'] }}
+
+</td>
+
+<td>
+
+{{ student['name'] }}
+
+</td>
+
+<td>
+
+<a
+href="{{ url_for('edit_student', usn=student['usn']) }}"
+target="_blank"
+rel="noopener noreferrer"
+class="edit-btn">
+
+Edit
+
+</a>
+
+</td>
+
+<td>
+
+<a
+href="/delete_student/{{ student['usn'] }}"
+class="delete-btn"
+onclick="return confirm('Delete this student?')">
+
+Delete
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>

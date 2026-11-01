@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Timetable</title>
+
+<style>
+
+body{
+    background:#121212;
+    color:white;
+    font-family:Arial;
+}
+
+form{
+    width:400px;
+    margin:auto;
+    margin-top:50px;
+    background:#1e1e1e;
+    padding:20px;
+    border-radius:10px;
+}
+
+input, select{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:15px;
+    background:#007bff;
+    color:white;
+    border:none;
+    border-radius:5px;
+}
+
+</style>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<form method="POST">
+
+<h2>Add Timetable</h2>
+
+<select name="subject_code">
+
+<option>1BMATCS201</option>
+<option>1BPHYCS202</option>
+<option>1BESC204B</option>
+<option>1BPIC205</option>
+<option>1BSS207</option>
+<option>1BSK209</option>
+<option>1BCEDCS203</option>
+<option>1BPICL206</option>
+<option>1BPRJ208</option>
+</select>
+
+<select name="day">
+
+<option>Monday</option>
+<option>Tuesday</option>
+<option>Wednesday</option>
+<option>Thursday</option>
+<option>Friday</option>
+<option>Saturday</option>
+
+</select>
+
+<input type="time" name="start_time" required>
+
+<input type="time" name="end_time" required>
+
+<input type="number" name="period" placeholder="Period Number" required>
+
+<button type="submit">
+
+Add Timetable
+
+</button>
+
+</form>
+
+</body>
+</html>

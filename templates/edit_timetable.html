@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Timetable</title>
+
+    <style>
+
+        body{
+            background:#121212;
+            color:white;
+            font-family:Arial;
+        }
+
+        .container{
+
+            width:500px;
+
+            margin:auto;
+
+            margin-top:50px;
+
+            background:#1e1e1e;
+
+            padding:30px;
+
+            border-radius:10px;
+        }
+
+        h2{
+            text-align:center;
+        }
+
+        input,
+        select{
+
+            width:100%;
+
+            padding:10px;
+
+            margin-top:10px;
+
+            margin-bottom:15px;
+
+            border:none;
+
+            border-radius:5px;
+        }
+
+        button{
+
+            width:100%;
+
+            padding:12px;
+
+            background:#007bff;
+
+            color:white;
+
+            border:none;
+
+            border-radius:5px;
+
+            cursor:pointer;
+        }
+
+    </style>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Edit Timetable</h2>
+
+<form method="POST">
+
+    <input
+        type="text"
+        name="subject_code"
+        value="{{ row['subject_code'] }}"
+        required>
+
+    <input
+        type="text"
+        name="day"
+        value="{{ row['day'] }}"
+        required>
+
+    <input
+        type="time"
+        name="start_time"
+        value="{{ row['start_time'] }}"
+        required>
+
+    <input
+        type="time"
+        name="end_time"
+        value="{{ row['end_time'] }}"
+        required>
+
+    <input
+        type="number"
+        name="period"
+        value="{{ row['period'] }}"
+        required>
+
+    <button type="submit">
+        Update Timetable
+    </button>
+
+</form>
+
+</div>
+
+</body>
+</html>
